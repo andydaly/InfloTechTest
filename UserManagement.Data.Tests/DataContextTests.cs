@@ -1,5 +1,4 @@
 using System.Linq;
-using FluentAssertions;
 using UserManagement.Models;
 
 namespace UserManagement.Data.Tests;

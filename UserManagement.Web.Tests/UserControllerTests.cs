@@ -23,6 +23,47 @@ public class UserControllerTests
             .Which.Items.Should().BeEquivalentTo(users);
     }
 
+    [Fact]
+    public void List_WhenFilterIsActive_ModelMustContainOnlyActiveUsers()
+    {
+        // Arrange
+        var controller = CreateController();
+        var activeUsers = new[]
+        {
+            new User { Forename = "Alice", Surname = "A", Email = "a@example.com", IsActive = true },
+            new User { Forename = "Cara",  Surname = "C", Email = "c@example.com", IsActive = true }
+        };
+
+        _userService.Setup(s => s.FilterByActive(true)).Returns(activeUsers);
+
+        // Act
+        var result = controller.List("active");
+
+        // Assert
+        result.Model.Should().BeOfType<UserListViewModel>().Which.Items.Should().BeEquivalentTo(activeUsers);
+    }
+
+    [Fact]
+    public void List_WhenFilterIsInactive_ModelMustContainOnlyInactiveUsers()
+    {
+        // Arrange
+        var controller = CreateController();
+        var inactiveUsers = new[]
+        {
+            new User { Forename = "Bob",  Surname = "B", Email = "b@example.com", IsActive = false },
+            new User { Forename = "Dane", Surname = "D", Email = "d@example.com", IsActive = false }
+        };
+
+        _userService.Setup(s => s.FilterByActive(false)).Returns(inactiveUsers);
+
+        // Act
+        var result = controller.List("inactive");
+
+        // Assert
+        result.Model.Should().BeOfType<UserListViewModel>().Which.Items.Should().BeEquivalentTo(inactiveUsers);
+    }
+
+
     private User[] SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
     {
         var users = new[]
