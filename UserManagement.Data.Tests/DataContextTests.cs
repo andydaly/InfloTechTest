@@ -70,5 +70,48 @@ public class DataContextTests
         saved.DateOfBirth.Should().Be(dob);
     }
 
+    [Fact]
+    public void Update_WhenUserModified_MustPersistChanges()
+    {
+        // Arrange
+        var context = CreateContext();
+        var user = context.GetAll<User>().First();
+        var originalSurname = user.Surname;
+
+        // Act
+        user.Surname = originalSurname + " Jr.";
+        context.Update(user);
+
+        // Assert
+        var reloaded = context.GetAll<User>().First(u => u.Id == user.Id);
+        reloaded.Surname.Should().Be(user.Surname);
+    }
+
+    [Fact]
+    public void Create_And_Delete_RoundTrip_Works()
+    {
+        // Arrange
+        var context = CreateContext();
+        var email = "temp@example.com";
+        var user = new User
+        {
+            Forename = "Temp",
+            Surname = "User",
+            Email = email,
+            IsActive = false,
+            DateOfBirth = new DateTime(1977, 7, 7)
+        };
+
+        // Act
+        context.Create(user);
+        context.GetAll<User>().Should().Contain(u => u.Email == email);
+
+        context.Delete(user);
+
+        // Assert
+        context.GetAll<User>().Should().NotContain(u => u.Email == email);
+    }
+
+
     private DataContext CreateContext() => new();
 }

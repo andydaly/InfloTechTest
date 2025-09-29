@@ -64,6 +64,130 @@ public class UserServiceTests
         result.Select(u => u.Email).Should().BeEquivalentTo(new[] { "b@example.com", "d@example.com" });
     }
 
+    [Fact]
+    public void GetById_WhenEntityExists_ReturnsEntity()
+    {
+        // Arrange
+        var service = CreateService();
+        var users = new[]
+        {
+            new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true },
+            new User { Id = 2, Forename = "B", Surname = "B", Email = "b@example.com", IsActive = false }
+        }.AsQueryable();
+        _dataContext.Setup(s => s.GetAll<User>()).Returns(users);
+
+        // Act
+        var result = service.GetById(2);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Email.Should().Be("b@example.com");
+    }
+
+    [Fact]
+    public void GetById_WhenEntityMissing_ReturnsNull()
+    {
+        // Arrange
+        var service = CreateService();
+        var users = new[]
+        {
+            new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true }
+        }.AsQueryable();
+        _dataContext.Setup(s => s.GetAll<User>()).Returns(users);
+
+        // Act
+        var result = service.GetById(999);
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void Create_CallsDataContextCreate()
+    {
+        // Arrange
+        var service = CreateService();
+        var user = new User { Forename = "N", Surname = "N", Email = "n@example.com", IsActive = true };
+
+        // Act
+        service.Create(user);
+
+        // Assert
+        _dataContext.Verify(dc => dc.Create(user), Times.Once);
+    }
+
+    [Fact]
+    public void Update_WhenEntityExists_UpdatesAndReturnsTrue()
+    {
+        // Arrange
+        var service = CreateService();
+        var existing = new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true };
+        _dataContext.Setup(s => s.GetAll<User>()).Returns(new[] { existing }.AsQueryable());
+
+        var updated = new User { Id = 1, Forename = "Alice", Surname = "Anderson", Email = "alice@example.com", IsActive = false };
+
+        // Act
+        var ok = service.Update(updated);
+
+        // Assert
+        ok.Should().BeTrue();
+        _dataContext.Verify(dc => dc.Update(It.Is<User>(u =>
+            u.Id == 1 &&
+            u.Forename == "Alice" &&
+            u.Surname == "Anderson" &&
+            u.Email == "alice@example.com" &&
+            u.IsActive == false
+        )), Times.Once);
+    }
+
+    [Fact]
+    public void Update_WhenEntityMissing_ReturnsFalse()
+    {
+        // Arrange
+        var service = CreateService();
+        _dataContext.Setup(s => s.GetAll<User>()).Returns(Enumerable.Empty<User>().AsQueryable());
+
+        var updated = new User { Id = 42, Forename = "X", Surname = "Y", Email = "z@example.com" };
+
+        // Act
+        var ok = service.Update(updated);
+
+        // Assert
+        ok.Should().BeFalse();
+        _dataContext.Verify(dc => dc.Update(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public void Delete_WhenEntityExists_RemovesAndReturnsTrue()
+    {
+        // Arrange
+        var service = CreateService();
+        var existing = new User { Id = 10, Forename = "Del", Surname = "User", Email = "del@example.com" };
+        _dataContext.Setup(s => s.GetAll<User>()).Returns(new[] { existing }.AsQueryable());
+
+        // Act
+        var ok = service.Delete(10);
+
+        // Assert
+        ok.Should().BeTrue();
+        _dataContext.Verify(dc => dc.Delete(existing), Times.Once);
+    }
+
+    [Fact]
+    public void Delete_WhenEntityMissing_ReturnsFalse()
+    {
+        // Arrange
+        var service = CreateService();
+        _dataContext.Setup(s => s.GetAll<User>()).Returns(Enumerable.Empty<User>().AsQueryable());
+
+        // Act
+        var ok = service.Delete(10);
+
+        // Assert
+        ok.Should().BeFalse();
+        _dataContext.Verify(dc => dc.Delete(It.IsAny<User>()), Times.Never);
+    }
+
     private IQueryable<User> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
     {
         var users = new[]

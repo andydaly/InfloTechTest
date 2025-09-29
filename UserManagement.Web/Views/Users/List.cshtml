@@ -43,9 +43,9 @@
                                 Actions
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="btnToggleActions">
-                                <li><a class="dropdown-item" href="#">View</a></li>
-                                <li><a class="dropdown-item" href="#">Edit</a></li>
-                                <li><a class="dropdown-item" href="#">Delete</a></li>
+                                <li><a class="dropdown-item" asp-controller="Users" asp-action="Details" asp-route-id="@item.Id">View</a></li>
+                                <li><a class="dropdown-item" asp-controller="Users" asp-action="Edit" asp-route-id="@item.Id">Edit</a></li>
+                                <li><a class="dropdown-item" asp-controller="Users" asp-action="Delete" asp-route-id="@item.Id">Delete</a></li>
                             </ul>
                         </div>
                     </td>
@@ -63,7 +63,7 @@
     </div>
     <span class="ms-3">Current filter: @Model.CurrentFilter</span>
 
-    <a href="#" class="btn btn-primary float-end">
+    <a asp-controller="Users" asp-action="Create" class="btn btn-primary float-end">
         Add User
     </a>
 </div>
