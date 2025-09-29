@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using UserManagement.Models;
 
@@ -15,7 +16,9 @@ public class DataContextTests
         {
             Forename = "Brand New",
             Surname = "User",
-            Email = "brandnewuser@example.com"
+            Email = "brandnewuser@example.com",
+            DateOfBirth = new DateTime(1990, 1, 1),
+            IsActive = true
         };
         context.Create(entity);
 
@@ -41,6 +44,30 @@ public class DataContextTests
 
         // Assert: Verifies that the action of the method under test behaves as expected.
         result.Should().NotContain(s => s.Email == entity.Email);
+    }
+
+    [Fact]
+    public void Create_WhenUserHasDateOfBirth_MustPersistDateOfBirth()
+    {
+        // Arrange
+        var context = CreateContext();
+        var dob = new DateTime(1985, 5, 20);
+
+        var entity = new User
+        {
+            Forename = "Jane",
+            Surname = "Doe",
+            Email = "janedoe@example.com",
+            DateOfBirth = dob,
+            IsActive = true
+        };
+
+        // Act
+        context.Create(entity);
+        var saved = context.GetAll<User>().First(u => u.Email == "janedoe@example.com");
+
+        // Assert
+        saved.DateOfBirth.Should().Be(dob);
     }
 
     private DataContext CreateContext() => new();
