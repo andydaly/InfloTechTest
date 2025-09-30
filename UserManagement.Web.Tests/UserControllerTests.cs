@@ -73,10 +73,12 @@ public class UserControllerTests
         _userService.Setup(s => s.GetById(5)).Returns(user);
 
         // Act
-        var result = controller.Details(5);
+        var result = controller.Details(5) as ViewResult;
 
         // Assert
-        result.Should().BeOfType<ViewResult>().Which.Model.Should().BeSameAs(user);
+        result.Should().NotBeNull();
+        result!.Model.Should().BeOfType<UserDetailsViewModel>()
+              .Which.User.Should().BeSameAs(user);
     }
 
     [Fact]
@@ -219,13 +221,16 @@ public class UserControllerTests
     {
         // Arrange
         var controller = CreateController();
+        var user = new User { Id = 9, Forename = "Del", Surname = "User", Email = "del@example.com" };
+        _userService.Setup(s => s.GetById(9)).Returns(user); 
         _userService.Setup(s => s.Delete(9)).Returns(true);
 
         // Act
         var result = controller.DeleteConfirmed(9);
 
         // Assert
-        result.Should().BeOfType<RedirectToActionResult>().Which.ActionName.Should().Be(nameof(UsersController.List));
+        result.Should().BeOfType<RedirectToActionResult>()
+              .Which.ActionName.Should().Be(nameof(UsersController.List));
         _userService.Verify(s => s.Delete(9), Times.Once);
     }
 
@@ -264,5 +269,6 @@ public class UserControllerTests
     }
 
     private readonly Mock<IUserService> _userService = new();
-    private UsersController CreateController() => new(_userService.Object);
+    private readonly Mock<IUserLogService> _userLogService = new();
+    private UsersController CreateController() => new(_userService.Object, _userLogService.Object);
 }

@@ -10,7 +10,13 @@ namespace UserManagement.WebMS.Controllers;
 public class UsersController : Controller
 {
     private readonly IUserService _userService;
-    public UsersController(IUserService userService) => _userService = userService;
+    private readonly IUserLogService _logService;
+
+    public UsersController(IUserService userService, IUserLogService logService)
+    {
+        _userService = userService;
+        _logService = logService;
+    }
 
     [HttpGet]
     public ViewResult List(string filter = "all")
@@ -62,6 +68,7 @@ public class UsersController : Controller
         }
 
         _userService.Create(model);
+        _logService.Log(model.Id, UserActionType.Created, $"Created {model.Forename} {model.Surname}");
         return RedirectToAction(nameof(List));
     }
 
@@ -70,7 +77,15 @@ public class UsersController : Controller
     {
         var user = _userService.GetById(id);
         if (user is null) return NotFound();
-        return View(user);
+
+        _logService.Log(user.Id, UserActionType.Viewed, $"Viewed {user.Forename} {user.Surname}");
+
+        var vm = new UserDetailsViewModel
+        {
+            User = user,
+            RecentLogs = _logService.GetForUser(user.Id, 10).ToList()
+        };
+        return View(vm);
     }
 
     [HttpGet("edit/{id:long}")]
@@ -98,6 +113,7 @@ public class UsersController : Controller
         var ok = _userService.Update(model);
         if (!ok) return NotFound();
 
+        _logService.Log(model.Id, UserActionType.Updated, $"Updated {model.Forename} {model.Surname}");
         return RedirectToAction(nameof(List));
     }
 
@@ -113,8 +129,13 @@ public class UsersController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult DeleteConfirmed(long id)
     {
+        var user = _userService.GetById(id);
+        if (user is null) return NotFound();
+
+        _logService.Log(user.Id, UserActionType.Deleted, $"Deleted {user.Forename} {user.Surname}");
         var ok = _userService.Delete(id);
         if (!ok) return NotFound();
+
         return RedirectToAction(nameof(List));
     }
 }

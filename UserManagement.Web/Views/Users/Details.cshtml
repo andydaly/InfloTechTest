@@ -1,4 +1,4 @@
-﻿@model UserManagement.Models.User
+﻿@model UserManagement.Web.Models.Users.UserDetailsViewModel
 @{
     ViewData["Title"] = "User Details";
 }
@@ -6,25 +6,64 @@
 
 <dl class="row">
     <dt class="col-sm-3">Id</dt>
-    <dd class="col-sm-9">@Model.Id</dd>
+    <dd class="col-sm-9">@Model.User.Id</dd>
 
     <dt class="col-sm-3">Forename</dt>
-    <dd class="col-sm-9">@Model.Forename</dd>
+    <dd class="col-sm-9">@Model.User.Forename</dd>
 
     <dt class="col-sm-3">Surname</dt>
-    <dd class="col-sm-9">@Model.Surname</dd>
+    <dd class="col-sm-9">@Model.User.Surname</dd>
 
     <dt class="col-sm-3">Email</dt>
-    <dd class="col-sm-9">@Model.Email</dd>
+    <dd class="col-sm-9">@Model.User.Email</dd>
 
     <dt class="col-sm-3">Date of Birth</dt>
-    <dd class="col-sm-9">@($"{Model.DateOfBirth:yyyy-MM-dd}")</dd>
+    <dd class="col-sm-9">@($"{Model.User.DateOfBirth:yyyy-MM-dd}")</dd>
 
     <dt class="col-sm-3">Account Active</dt>
-    <dd class="col-sm-9">@(Model.IsActive ? "Yes" : "No")</dd>
+    <dd class="col-sm-9">@(Model.User.IsActive ? "Yes" : "No")</dd>
 </dl>
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+<div class="mt-4">
+    <h3>Recent Activity</h3>
+    @if (Model.RecentLogs.Count == 0)
+    {
+        <p class="text-muted">No activity recorded yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>When</th>
+                        <th>Action</th>
+                        <th>Performed By</th>
+                        <th>Details</th>
+                        <th style="width:1px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.RecentLogs)
+                    {
+                        <tr>
+                            <td>@log.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@log.Action</td>
+                            <td>@(string.IsNullOrWhiteSpace(log.PerformedBy) ? "-" : log.PerformedBy)</td>
+                            <td>@log.Details</td>
+                            <td>
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Logs" asp-action="Details" asp-route-id="@log.Id">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <a class="btn btn-outline-primary" asp-controller="Logs" asp-action="Index" asp-route-q="@Model.User.Id">View all logs</a>
+    }
+</div>
+
+<div class="mt-3">
+    <a asp-action="Edit" asp-route-id="@Model.User.Id" class="btn btn-primary">Edit</a>
     <a asp-action="List" class="btn btn-secondary">Back to List</a>
 </div>

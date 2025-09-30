@@ -1,0 +1,31 @@
+﻿@model UserManagement.Models.UserLog
+@{
+    ViewData["Title"] = "Log Entry";
+}
+
+<h2>Log Entry</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">Id</dt>
+    <dd class="col-sm-9">@Model.Id</dd>
+
+    <dt class="col-sm-3">When</dt>
+    <dd class="col-sm-9">@Model.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd>
+
+    <dt class="col-sm-3">Action</dt>
+    <dd class="col-sm-9">@Model.Action</dd>
+
+    <dt class="col-sm-3">User Id</dt>
+    <dd class="col-sm-9">@Model.UserId</dd>
+
+    <dt class="col-sm-3">Performed By</dt>
+    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(Model.PerformedBy) ? Model.PerformedBy : "-")</dd>
+
+    <dt class="col-sm-3">Details</dt>
+    <dd class="col-sm-9">@Model.Details</dd>
+</dl>
+
+<div>
+    <a asp-controller="Logs" asp-action="Index" class="btn btn-secondary">Back to Logs</a>
+    <a asp-controller="Users" asp-action="Details" asp-route-id="@Model.UserId" class="btn btn-outline-primary">User Details</a>
+</div>
