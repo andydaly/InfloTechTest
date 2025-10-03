@@ -1,20 +1,24 @@
 ﻿using System.Linq;
-using UserManagement.Services.Domain.Interfaces;
+using System.Threading.Tasks;
+using UserManagement.Services.Interfaces;
 using UserManagement.Web.Models.Logs;
 
-namespace UserManagement.WebMS.Controllers;
+namespace UserManagement.Web.Controllers;
 
 [Route("logs")]
 public class LogsController : Controller
 {
     private readonly IUserLogService _logs;
 
-    public LogsController(IUserLogService logs) => _logs = logs;
+    public LogsController(IUserLogService logs)
+    {
+        _logs = logs;
+    }
 
     [HttpGet("")]
-    public IActionResult Index(int page = 1, int pageSize = 25, string? q = null)
+    public async Task<IActionResult> Index(int page = 1, int pageSize = 25, string? q = null)
     {
-        var (items, total) = _logs.GetAll(page, pageSize, q);
+        var (items, total) = await _logs.GetAllAsync(page, pageSize, q);
 
         var vm = new LogListViewModel
         {
@@ -37,9 +41,9 @@ public class LogsController : Controller
     }
 
     [HttpGet("{id:long}")]
-    public IActionResult Details(long id)
+    public async Task<IActionResult> Details(long id)
     {
-        var log = _logs.GetById(id);
+        var log = await _logs.GetByIdAsync(id);
         if (log is null) return NotFound();
         return View(log);
     }

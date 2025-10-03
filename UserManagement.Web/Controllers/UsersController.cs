@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Linq;
-using UserManagement.Models;
-using UserManagement.Services.Domain.Interfaces;
+using System.Threading.Tasks;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Interfaces;
 using UserManagement.Web.Models.Users;
 
-namespace UserManagement.WebMS.Controllers;
+namespace UserManagement.Web.Controllers;
 
 [Route("users")]
 public class UsersController : Controller
@@ -19,13 +20,13 @@ public class UsersController : Controller
     }
 
     [HttpGet]
-    public ViewResult List(string filter = "all")
+    public async Task<ViewResult> List(string filter = "all")
     {
         var users = filter?.ToLowerInvariant() switch
         {
-            "active" => _userService.FilterByActive(true),
-            "inactive" => _userService.FilterByActive(false),
-            _ => _userService.GetAll()
+            "active" => await _userService.FilterByActiveAsync(true),
+            "inactive" => await _userService.FilterByActiveAsync(false),
+            _ => await _userService.GetAllAsync()
         };
 
         var items = users.Select(p => new UserListItemViewModel
@@ -60,45 +61,45 @@ public class UsersController : Controller
 
     [HttpPost("create")]
     [ValidateAntiForgeryToken]
-    public IActionResult Create(User model)
+    public async Task<IActionResult> Create(User model)
     {
         if (!ModelState.IsValid)
         {
             return View(model);
         }
 
-        _userService.Create(model);
-        _logService.Log(model.Id, UserActionType.Created, $"Created {model.Forename} {model.Surname}");
+        await _userService.CreateAsync(model);
+        await _logService.LogAsync(model.Id, UserActionType.Created, $"Created {model.Forename} {model.Surname}");
         return RedirectToAction(nameof(List));
     }
 
     [HttpGet("details/{id:long}")]
-    public IActionResult Details(long id)
+    public async Task<IActionResult> Details(long id)
     {
-        var user = _userService.GetById(id);
+        var user = await _userService.GetByIdAsync(id);
         if (user is null) return NotFound();
 
-        _logService.Log(user.Id, UserActionType.Viewed, $"Viewed {user.Forename} {user.Surname}");
+        await _logService.LogAsync(user.Id, UserActionType.Viewed, $"Viewed {user.Forename} {user.Surname}");
 
         var vm = new UserDetailsViewModel
         {
             User = user,
-            RecentLogs = _logService.GetForUser(user.Id, 10).ToList()
+            RecentLogs = (await _logService.GetForUserAsync(user.Id, 10)).ToList()
         };
         return View(vm);
     }
 
     [HttpGet("edit/{id:long}")]
-    public IActionResult Edit(long id)
+    public async Task<IActionResult> Edit(long id)
     {
-        var user = _userService.GetById(id);
+        var user = await _userService.GetByIdAsync(id);
         if (user is null) return NotFound();
         return View(user);
     }
 
     [HttpPost("edit/{id:long}")]
     [ValidateAntiForgeryToken]
-    public IActionResult Edit(long id, User model)
+    public async Task<IActionResult> Edit(long id, User model)
     {
         if (id != model.Id)
         {
@@ -110,30 +111,30 @@ public class UsersController : Controller
             return View(model);
         }
 
-        var ok = _userService.Update(model);
+        var ok = await _userService.UpdateAsync(model);
         if (!ok) return NotFound();
 
-        _logService.Log(model.Id, UserActionType.Updated, $"Updated {model.Forename} {model.Surname}");
+        await _logService.LogAsync(model.Id, UserActionType.Updated, $"Updated {model.Forename} {model.Surname}");
         return RedirectToAction(nameof(List));
     }
 
     [HttpGet("delete/{id:long}")]
-    public IActionResult Delete(long id)
+    public async Task<IActionResult> Delete(long id)
     {
-        var user = _userService.GetById(id);
+        var user = await _userService.GetByIdAsync(id);
         if (user is null) return NotFound();
         return View(user);
     }
 
     [HttpPost("delete/{id:long}")]
     [ValidateAntiForgeryToken]
-    public IActionResult DeleteConfirmed(long id)
+    public async Task<IActionResult> DeleteConfirmed(long id)
     {
-        var user = _userService.GetById(id);
+        var user = await _userService.GetByIdAsync(id);
         if (user is null) return NotFound();
 
-        _logService.Log(user.Id, UserActionType.Deleted, $"Deleted {user.Forename} {user.Surname}");
-        var ok = _userService.Delete(id);
+        await _logService.LogAsync(user.Id, UserActionType.Deleted, $"Deleted {user.Forename} {user.Surname}");
+        var ok = await _userService.DeleteAsync(id);
         if (!ok) return NotFound();
 
         return RedirectToAction(nameof(List));

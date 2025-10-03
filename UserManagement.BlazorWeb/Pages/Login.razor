@@ -1,0 +1,47 @@
+﻿@page "/login"
+@attribute [AllowAnonymous]
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using UserManagement.BlazorWeb.Models
+@inject AuthClient Auth
+@inject NavigationManager Nav
+
+<h1>Sign in</h1>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<EditForm Model="_model" OnValidSubmit="OnSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="_model.Email" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Password</label>
+        <InputText class="form-control" type="password" @bind-Value="_model.Password" />
+    </div>
+    <button class="btn btn-primary" disabled="@_busy">Sign in</button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromQuery] public string? returnUrl { get; set; }
+    private LoginModel _model = new();
+    private bool _busy;
+    private string? _error;
+
+    private async Task OnSubmit()
+    {
+        _busy = true; _error = null;
+        var ok = await Auth.LoginAsync(_model.Email, _model.Password);
+        if (ok)
+        {
+            Nav.NavigateTo(string.IsNullOrWhiteSpace(returnUrl) ? "/users" : returnUrl!, true);
+        }
+        else _error = "Invalid credentials or inactive account.";
+        _busy = false;
+    }
+}

@@ -1,0 +1,84 @@
+﻿@page "/users/details/{Id:long}"
+@attribute [Authorize]
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using UserManagement.BlazorWeb.Dtos
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h2 class="mb-3">User Details</h2>
+
+@if (_user is null)
+{
+    <p>Loading…</p>
+}
+else
+{
+    <dl class="row">
+        <dt class="col-sm-3">Id</dt>
+        <dd class="col-sm-9">@_user.Id</dd>
+        <dt class="col-sm-3">Forename</dt>
+        <dd class="col-sm-9">@_user.Forename</dd>
+        <dt class="col-sm-3">Surname</dt>
+        <dd class="col-sm-9">@_user.Surname</dd>
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@_user.Email</dd>
+        <dt class="col-sm-3">Password</dt>
+        <dd class="col-sm-9">@Mask(_user.Password)</dd>
+        <dt class="col-sm-3">Date of Birth</dt>
+        <dd class="col-sm-9">@_user.DateOfBirth?.ToString("yyyy-MM-dd")</dd>
+        <dt class="col-sm-3">Account Active</dt>
+        <dd class="col-sm-9">@(_user.IsActive ? "Yes" : "No")</dd>
+    </dl>
+
+    <div class="mt-3">
+        <a class="btn btn-primary" href="@($"/users/edit/{_user.Id}")">Edit</a>
+        <a class="btn btn-secondary ms-2" href="/users">Back to List</a>
+    </div>
+
+    <div class="mt-4">
+        <h4>Recent Activity</h4>
+        @if (_logs is null)
+        {
+            <p class="text-muted">Loading logs…</p>
+        }
+        else if (_logs.Count == 0)
+        {
+            <p class="text-muted">No activity recorded yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead><tr><th>When</th><th>Action</th><th>Performed By</th><th>Details</th></tr></thead>
+                    <tbody>
+                        @foreach (var l in _logs)
+                        {
+                            <tr>
+                                <td>@l.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                <td>@l.Action</td>
+                                <td>@(string.IsNullOrWhiteSpace(l.PerformedBy) ? "-" : l.PerformedBy)</td>
+                                <td>@l.Details</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public long Id { get; set; }
+    private UserDto? _user;
+    private List<UserLogDto>? _logs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await Http.GetFromJsonAsync<UserDto>($"users/{Id}");
+        _logs = await Http.GetFromJsonAsync<List<UserLogDto>>($"users/{Id}/logs?take=10");
+    }
+    private static string Mask(string? value)
+      => string.IsNullOrEmpty(value) ? "" : new string('•', Math.Clamp(value.Length, 8, 12));
+}

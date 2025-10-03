@@ -1,15 +1,17 @@
 using System;
 using System.Linq;
-using UserManagement.Models;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using UserManagement.Data.Entities;
 
 namespace UserManagement.Data.Tests;
 
 public class DataContextTests
 {
     [Fact]
-    public void GetAll_WhenNewEntityAdded_MustIncludeNewEntity()
+    public async Task GetAll_WhenNewEntityAdded_MustIncludeNewEntity()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
+        // Arrange
         var context = CreateContext();
 
         var entity = new User
@@ -18,36 +20,37 @@ public class DataContextTests
             Surname = "User",
             Email = "brandnewuser@example.com",
             DateOfBirth = new DateTime(1990, 1, 1),
-            IsActive = true
+            IsActive = true,
+            Password = "mypassword1"
         };
-        context.Create(entity);
 
-        // Act: Invokes the method under test with the arranged parameters.
-        var result = context.GetAll<User>();
+        await context.CreateAsync(entity);
 
-        // Assert: Verifies that the action of the method under test behaves as expected.
-        result
-            .Should().Contain(s => s.Email == entity.Email)
-            .Which.Should().BeEquivalentTo(entity);
+        // Act
+        var result = context.GetAll<User>().ToList();
+
+        // Assert
+        result.Should().Contain(s => s.Email == entity.Email).Which.Should().BeEquivalentTo(entity);
     }
 
     [Fact]
-    public void GetAll_WhenDeleted_MustNotIncludeDeletedEntity()
+    public async Task GetAll_WhenDeleted_MustNotIncludeDeletedEntity()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
+        // Arrange
         var context = CreateContext();
         var entity = context.GetAll<User>().First();
-        context.Delete(entity);
 
-        // Act: Invokes the method under test with the arranged parameters.
-        var result = context.GetAll<User>();
+        await context.DeleteAsync(entity);
 
-        // Assert: Verifies that the action of the method under test behaves as expected.
+        // Act
+        var result = context.GetAll<User>().ToList();
+
+        // Assert
         result.Should().NotContain(s => s.Email == entity.Email);
     }
 
     [Fact]
-    public void Create_WhenUserHasDateOfBirth_MustPersistDateOfBirth()
+    public async Task Create_WhenUserHasDateOfBirth_MustPersistDateOfBirth()
     {
         // Arrange
         var context = CreateContext();
@@ -59,11 +62,12 @@ public class DataContextTests
             Surname = "Doe",
             Email = "janedoe@example.com",
             DateOfBirth = dob,
-            IsActive = true
+            IsActive = true,
+            Password = "mypassword1"
         };
 
         // Act
-        context.Create(entity);
+        await context.CreateAsync(entity);
         var saved = context.GetAll<User>().First(u => u.Email == "janedoe@example.com");
 
         // Assert
@@ -71,7 +75,31 @@ public class DataContextTests
     }
 
     [Fact]
-    public void Update_WhenUserModified_MustPersistChanges()
+    public async Task Create_WhenUserHasPassword_MustPersistPassword()
+    {
+        // Arrange
+        var context = CreateContext();
+
+        var entity = new User
+        {
+            Forename = "Paula",
+            Surname = "Word",
+            Email = "paulaword@example.com",
+            IsActive = true,
+            DateOfBirth = new DateTime(1992, 2, 2),
+            Password = "mypassword1"
+        };
+
+        // Act
+        await context.CreateAsync(entity);
+        var saved = context.GetAll<User>().First(u => u.Email == entity.Email);
+
+        // Assert
+        saved.Password.Should().Be("mypassword1");
+    }
+
+    [Fact]
+    public async Task Update_WhenUserModified_MustPersistChanges()
     {
         // Arrange
         var context = CreateContext();
@@ -80,7 +108,7 @@ public class DataContextTests
 
         // Act
         user.Surname = originalSurname + " Jr.";
-        context.Update(user);
+        await context.UpdateAsync(user);
 
         // Assert
         var reloaded = context.GetAll<User>().First(u => u.Id == user.Id);
@@ -88,7 +116,7 @@ public class DataContextTests
     }
 
     [Fact]
-    public void Create_And_Delete_RoundTrip_Works()
+    public async Task Create_And_Delete_RoundTrip_Works()
     {
         // Arrange
         var context = CreateContext();
@@ -99,19 +127,28 @@ public class DataContextTests
             Surname = "User",
             Email = email,
             IsActive = false,
-            DateOfBirth = new DateTime(1977, 7, 7)
+            DateOfBirth = new DateTime(1977, 7, 7),
+            Password = "mypassword1"
         };
 
         // Act
-        context.Create(user);
+        await context.CreateAsync(user);
         context.GetAll<User>().Should().Contain(u => u.Email == email);
 
-        context.Delete(user);
+        await context.DeleteAsync(user);
 
         // Assert
         context.GetAll<User>().Should().NotContain(u => u.Email == email);
     }
 
+    private static DataContext CreateContext()
+    {
+        var options = new DbContextOptionsBuilder<DataContext>()
+            .UseInMemoryDatabase(databaseName: $"Tests-{Guid.NewGuid()}")
+            .Options;
 
-    private DataContext CreateContext() => new();
+        var ctx = new DataContext(options);
+        ctx.Database.EnsureCreated(); 
+        return ctx;
+    }
 }

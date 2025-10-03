@@ -2,13 +2,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace UserManagement.Models;
+namespace UserManagement.Data.Entities;
 public enum UserActionType
 {
-    Created,
-    Viewed,
-    Updated,
-    Deleted
+    Created = 0,
+    Viewed = 1,
+    Updated = 2,
+    Deleted = 3,
+    LoggedIn = 4
 }
 
 public class UserLog

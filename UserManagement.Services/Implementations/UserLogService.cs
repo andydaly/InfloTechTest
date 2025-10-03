@@ -1,17 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using UserManagement.Data;
-using UserManagement.Models;
-using UserManagement.Services.Domain.Interfaces;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Interfaces;
 
-namespace UserManagement.Services.Domain.Implementations;
+namespace UserManagement.Services.Implementations;
+
 public class UserLogService : IUserLogService
 {
     private readonly IDataContext _data;
-    public UserLogService(IDataContext data) => _data = data;
+    public UserLogService(IDataContext data)
+    {
+        _data = data;
+    }
 
-    public void Log(long userId, UserActionType action, string? details = null, string? performedBy = null)
+    public async Task LogAsync(long userId, UserActionType action, string? details = null, string? performedBy = null, CancellationToken ct = default)
     {
         var entry = new UserLog
         {
@@ -20,12 +26,13 @@ public class UserLogService : IUserLogService
             Details = details,
             PerformedBy = performedBy
         };
-        _data.Create(entry);
+        await _data.CreateAsync(entry);
     }
 
-    public IEnumerable<UserLog> GetForUser(long userId, int take = 10) => _data.GetAll<UserLog>().Where(l => l.UserId == userId).OrderByDescending(l => l.OccurredAt).Take(take).ToList();
+    public async Task<IEnumerable<UserLog>> GetForUserAsync(long userId, int take = 10, CancellationToken ct = default)
+        => await _data.GetAll<UserLog>().Where(l => l.UserId == userId).OrderByDescending(l => l.OccurredAt).Take(take).ToListAsync(ct);
 
-    public (IEnumerable<UserLog> Items, int Total) GetAll(int page = 1, int pageSize = 25, string? query = null)
+    public async Task<(IEnumerable<UserLog> Items, int Total)> GetAllAsync(int page = 1, int pageSize = 25, string? query = null, CancellationToken ct = default)
     {
         if (page < 1) page = 1;
         if (pageSize <= 0) pageSize = 25;
@@ -42,11 +49,12 @@ public class UserLogService : IUserLogService
                 l.UserId.ToString().Contains(term));
         }
 
-        var total = q.Count();
-        var items = q.OrderByDescending(l => l.OccurredAt).Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var total = await q.CountAsync(ct);
+        var items = await q.OrderByDescending(l => l.OccurredAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
 
         return (items, total);
     }
 
-    public UserLog? GetById(long id) => _data.GetAll<UserLog>().FirstOrDefault(l => l.Id == id);
+    public async Task<UserLog?> GetByIdAsync(long id, CancellationToken ct = default)
+        => await _data.GetAll<UserLog>().FirstOrDefaultAsync(l => l.Id == id, ct);
 }

@@ -1,32 +1,37 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using UserManagement.Data;
-using UserManagement.Models;
-using UserManagement.Services.Domain.Interfaces;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Interfaces;
 
-namespace UserManagement.Services.Domain.Implementations;
+namespace UserManagement.Services.Implementations;
 
 public class UserService : IUserService
 {
-    private readonly IDataContext _dataAccess;
-    public UserService(IDataContext dataAccess) => _dataAccess = dataAccess;
-
-    public IEnumerable<User> FilterByActive(bool isActive)
-        => _dataAccess.GetAll<User>().Where(u => u.IsActive == isActive).ToList();
-
-    public IEnumerable<User> GetAll() => _dataAccess.GetAll<User>();
-
-    public User? GetById(long id)
-        => _dataAccess.GetAll<User>().FirstOrDefault(u => u.Id == id);
-
-    public void Create(User user)
+    private readonly IDataContext _data;
+    public UserService(IDataContext data)
     {
-        _dataAccess.Create(user);
+        _data = data;
     }
 
-    public bool Update(User user)
+    public async Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default)
+        => await _data.GetAll<User>().AsNoTracking().ToListAsync(ct);
+
+    public async Task<IEnumerable<User>> FilterByActiveAsync(bool isActive, CancellationToken ct = default)
+        => await _data.GetAll<User>().AsNoTracking().Where(u => u.IsActive == isActive).ToListAsync(ct);
+
+    public Task<User?> GetByIdAsync(long id, CancellationToken ct = default)
+        => _data.FindAsync<User>(id).AsTask();
+
+    public Task CreateAsync(User user, CancellationToken ct = default)
+        => _data.CreateAsync(user);
+
+    public async Task<bool> UpdateAsync(User user, CancellationToken ct = default)
     {
-        var existing = GetById(user.Id);
+        var existing = await GetByIdAsync(user.Id, ct);
         if (existing is null) return false;
 
         existing.Forename = user.Forename;
@@ -34,17 +39,21 @@ public class UserService : IUserService
         existing.Email = user.Email;
         existing.IsActive = user.IsActive;
         existing.DateOfBirth = user.DateOfBirth;
-
-        _dataAccess.Update(existing);
+        if (!string.IsNullOrWhiteSpace(user.Password))
+            existing.Password = user.Password;
+        await _data.UpdateAsync(existing);
         return true;
     }
 
-    public bool Delete(long id)
+    public async Task<bool> DeleteAsync(long id, CancellationToken ct = default)
     {
-        var existing = GetById(id);
+        var existing = await GetByIdAsync(id, ct);
         if (existing is null) return false;
 
-        _dataAccess.Delete(existing);
+        await _data.DeleteAsync(existing);
         return true;
     }
+
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+        => await _data.GetAll<User>().AsNoTracking().FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower(), ct);
 }

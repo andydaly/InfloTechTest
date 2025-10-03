@@ -1,4 +1,4 @@
-﻿using UserManagement.Models;
+﻿using UserManagement.Data.Entities;
 
 namespace UserManagement.Web.Models.Users;
 
