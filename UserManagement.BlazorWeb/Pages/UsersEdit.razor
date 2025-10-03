@@ -1,0 +1,92 @@
+﻿@page "/users/edit/{Id:long}"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using UserManagement.BlazorWeb.Dtos
+@using Microsoft.AspNetCore.Components.Forms
+
+<h1>Edit User</h1>
+
+@if (_model is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="_model" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Forename</label>
+                <InputText class="form-control" @bind-Value="_model.Forename" />
+                <ValidationMessage For="() => _model.Forename" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Surname</label>
+                <InputText class="form-control" @bind-Value="_model.Surname" />
+                <ValidationMessage For="() => _model.Surname" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Email</label>
+                <InputText class="form-control" @bind-Value="_model.Email" />
+                <ValidationMessage For="() => _model.Email" />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Date of Birth</label>
+                <InputDate class="form-control" @bind-Value="_model.DateOfBirth" />
+            </div>
+
+            <div class="col-12">
+                <div class="form-check">
+                    <InputCheckbox class="form-check-input" @bind-Value="_model.IsActive" />
+                    <label class="form-check-label">Account Active</label>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">New Password (optional)</label>
+                <input class="form-control"
+                       type="@(_showPwd ? "text" : "password")"
+                       @bind="_model.Password" placeholder="Leave blank to keep current" />
+                <div class="form-text">Leave blank to keep existing password.</div>
+                <div class="form-check mt-2">
+                    <input id="showPwd2" class="form-check-input" type="checkbox" @bind="_showPwd" />
+                    <label for="showPwd2" class="form-check-label">Show Password</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button class="btn btn-primary" disabled="@_busy">Save</button>
+            <a href="/users" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private UserDto? _model;
+    private bool _showPwd;
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+        => _model = await Http.GetFromJsonAsync<UserDto>($"users/{Id}");
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+
+        if (string.IsNullOrWhiteSpace(_model!.Password))
+            _model.Password = null;
+
+        var resp = await Http.PutAsJsonAsync($"users/{Id}", _model);
+        _busy = false;
+        if (resp.IsSuccessStatusCode) Nav.NavigateTo("/users", true);
+    }
+}

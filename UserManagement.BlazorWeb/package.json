@@ -1,0 +1,13 @@
+{
+    "name": "usermanagement-blazorweb",
+    "private": true,
+    "devDependencies": {
+        "esbuild": "^0.23.0"
+    },
+    "scripts": {
+        "build:css": "esbuild wwwroot/css/styles.css --bundle --minify --outfile=wwwroot/build/styles.css",
+        "build:js": "esbuild wwwroot/js/app.js --bundle --minify --outfile=wwwroot/build/app.js",
+        "build": "npm run build:css && npm run build:js",
+        "watch": "esbuild wwwroot/css/styles.css --bundle --outfile=wwwroot/build/styles.css --watch"
+    }
+}

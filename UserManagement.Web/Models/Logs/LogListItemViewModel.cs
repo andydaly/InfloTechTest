@@ -1,5 +1,5 @@
 ﻿using System;
-using UserManagement.Models;
+using UserManagement.Data.Entities;
 
 namespace UserManagement.Web.Models.Logs;
 

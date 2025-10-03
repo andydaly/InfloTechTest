@@ -1,0 +1,56 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@inject AuthClient Auth
+@inject NavigationManager Nav
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light app-navbar">
+    <div class="container">
+        <a class="navbar-brand fw-semibold" href="/">User Management</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topnav"
+                aria-controls="topnav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="topnav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/users">Users</NavLink></li>
+                <li class="nav-item"><NavLink class="nav-link" href="/logs">Logs</NavLink></li>
+            </ul>
+
+            <AuthorizeView Context="authState">
+                <Authorized>
+                    <span class="navbar-text me-3">@authState.User.Identity?.Name</span>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="Logout">Logout</button>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="btn btn-sm btn-primary" href="/login">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</nav>
+
+<main class="container py-4 page">
+    <ErrorBoundary>
+        <ChildContent>
+            @Body
+        </ChildContent>
+        <ErrorContent>
+            <div class="alert alert-danger">
+                Something went wrong while loading this page.
+                <a href="" class="alert-link">Reload</a>
+            </div>
+        </ErrorContent>
+    </ErrorBoundary>
+</main>
+
+@code {
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/login", true);
+    }
+}

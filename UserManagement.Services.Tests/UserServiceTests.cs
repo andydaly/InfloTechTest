@@ -1,213 +1,218 @@
+using System;
 using System.Linq;
-using UserManagement.Models;
-using UserManagement.Services.Domain.Implementations;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using UserManagement.Data.Entities;
+using UserManagement.Services.Implementations;
 
 namespace UserManagement.Data.Tests;
 
 public class UserServiceTests
 {
     [Fact]
-    public void GetAll_WhenContextReturnsEntities_MustReturnSameEntities()
+    public async Task GetAllAsync_WhenContextHasEntities_ReturnsThem()
     {
-        // Arrange: Initializes objects and sets the value of the data that is passed to the method under test.
-        var service = CreateService();
-        var users = SetupUsers();
+        using var ctx = CreateContext();
+        ctx.Users!.AddRange(
+            new User { Id = 1, Forename = "A", Surname = "One", Email = "a1@example.com", IsActive = true, Password = "pw1" },
+            new User { Id = 2, Forename = "B", Surname = "Two", Email = "b2@example.com", IsActive = false, Password = "pw2" }
+        );
+        await ctx.SaveChangesAsync();
 
-        // Act: Invokes the method under test with the arranged parameters.
-        var result = service.GetAll();
+        var sut = new UserService(ctx);
 
-        // Assert: Verifies that the action of the method under test behaves as expected.
-        result.Should().BeSameAs(users);
+        var result = await sut.GetAllAsync();
+
+        result.Select(u => u.Email)
+              .Should().BeEquivalentTo("a1@example.com", "b2@example.com");
     }
 
     [Fact]
-    public void FilterByActive_WhenTrue_ReturnsOnlyActiveUsers()
+    public async Task FilterByActiveAsync_WhenTrue_ReturnsOnlyActive()
     {
-        // Arrange
-        var service = CreateService();
-        var users = new[]
+        using var ctx = CreateContext();
+        ctx.Users!.AddRange(
+            new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true, Password = "pw1" },
+            new User { Id = 2, Forename = "B", Surname = "B", Email = "b@example.com", IsActive = false, Password = "pw2" },
+            new User { Id = 3, Forename = "C", Surname = "C", Email = "c@example.com", IsActive = true, Password = "pw3" }
+        );
+        await ctx.SaveChangesAsync();
+
+        var sut = new UserService(ctx);
+
+        var result = (await sut.FilterByActiveAsync(true)).ToList();
+
+        result.Should().HaveCount(2).And.OnlyContain(u => u.IsActive);
+    }
+
+    [Fact]
+    public async Task FilterByActiveAsync_WhenFalse_ReturnsOnlyInactive()
+    {
+        using var ctx = CreateContext();
+        ctx.Users!.AddRange(
+            new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true, Password = "pw1" },
+            new User { Id = 2, Forename = "B", Surname = "B", Email = "b@example.com", IsActive = false, Password = "pw2" },
+            new User { Id = 3, Forename = "D", Surname = "D", Email = "d@example.com", IsActive = false, Password = "pw3" }
+        );
+        await ctx.SaveChangesAsync();
+
+        var sut = new UserService(ctx);
+
+        var result = (await sut.FilterByActiveAsync(false)).ToList();
+
+        result.Should().HaveCount(2).And.OnlyContain(u => !u.IsActive);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhenExists_ReturnsUser()
+    {
+        using var ctx = CreateContext();
+        ctx.Users!.AddRange(
+            new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true, Password = "pw1" },
+            new User { Id = 2, Forename = "B", Surname = "B", Email = "b@example.com", IsActive = false, Password = "pw2" }
+        );
+        await ctx.SaveChangesAsync();
+
+        var sut = new UserService(ctx);
+
+        var user = await sut.GetByIdAsync(2);
+
+        user.Should().NotBeNull();
+        user!.Email.Should().Be("b@example.com");
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhenMissing_ReturnsNull()
+    {
+        using var ctx = CreateContext();
+        var sut = new UserService(ctx);
+
+        var user = await sut.GetByIdAsync(999);
+
+        user.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateAsync_PersistsUser()
+    {
+        using var ctx = CreateContext();
+        var sut = new UserService(ctx);
+
+        var u = new User
         {
-            new User { Forename = "Alice", Surname = "A", Email = "a@example.com", IsActive = true },
-            new User { Forename = "Bob",   Surname = "B", Email = "b@example.com", IsActive = false },
-            new User { Forename = "Cara",  Surname = "C", Email = "c@example.com", IsActive = true }
-        }.AsQueryable();
+            Forename = "N",
+            Surname = "N",
+            Email = "n@example.com",
+            IsActive = true,
+            Password = "testpass1"
+        };
 
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(users);
+        await sut.CreateAsync(u);
 
-        // Act
-        var result = service.FilterByActive(true).ToList();
-
-        // Assert
-        result.Should().OnlyContain(u => u.IsActive).And.HaveCount(2);
-        result.Select(u => u.Email).Should().BeEquivalentTo(new[] { "a@example.com", "c@example.com" });
+        (await ctx.Users!.AnyAsync(x => x.Email == "n@example.com")).Should().BeTrue();
     }
 
     [Fact]
-    public void FilterByActive_WhenFalse_ReturnsOnlyInactiveUsers()
+    public async Task UpdateAsync_WhenExists_UpdatesAndReturnsTrue()
     {
-        // Arrange
-        var service = CreateService();
-        var users = new[]
+        using var ctx = CreateContext();
+        var existing = new User
         {
-            new User { Forename = "Alice", Surname = "A", Email = "a@example.com", IsActive = true },
-            new User { Forename = "Bob",   Surname = "B", Email = "b@example.com", IsActive = false },
-            new User { Forename = "Dane",  Surname = "D", Email = "d@example.com", IsActive = false }
-        }.AsQueryable();
+            Id = 1,
+            Forename = "Old",
+            Surname = "Name",
+            Email = "old@example.com",
+            IsActive = true,
+            Password = "oldpass"
+        };
+        ctx.Users!.Add(existing);
+        await ctx.SaveChangesAsync();
 
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(users);
+        var sut = new UserService(ctx);
 
-        // Act
-        var result = service.FilterByActive(false).ToList();
-
-        // Assert
-        result.Should().OnlyContain(u => !u.IsActive).And.HaveCount(2);
-        result.Select(u => u.Email).Should().BeEquivalentTo(new[] { "b@example.com", "d@example.com" });
-    }
-
-    [Fact]
-    public void GetById_WhenEntityExists_ReturnsEntity()
-    {
-        // Arrange
-        var service = CreateService();
-        var users = new[]
+        var updated = new User
         {
-            new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true },
-            new User { Id = 2, Forename = "B", Surname = "B", Email = "b@example.com", IsActive = false }
-        }.AsQueryable();
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(users);
+            Id = 1,
+            Forename = "New",
+            Surname = "Person",
+            Email = "new@example.com",
+            IsActive = false,
+            Password = "newpass"
+        };
 
-        // Act
-        var result = service.GetById(2);
+        var ok = await sut.UpdateAsync(updated);
 
-        // Assert
-        result.Should().NotBeNull();
-        result!.Email.Should().Be("b@example.com");
-    }
-
-    [Fact]
-    public void GetById_WhenEntityMissing_ReturnsNull()
-    {
-        // Arrange
-        var service = CreateService();
-        var users = new[]
-        {
-            new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true }
-        }.AsQueryable();
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(users);
-
-        // Act
-        var result = service.GetById(999);
-
-        // Assert
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public void Create_CallsDataContextCreate()
-    {
-        // Arrange
-        var service = CreateService();
-        var user = new User { Forename = "N", Surname = "N", Email = "n@example.com", IsActive = true };
-
-        // Act
-        service.Create(user);
-
-        // Assert
-        _dataContext.Verify(dc => dc.Create(user), Times.Once);
-    }
-
-    [Fact]
-    public void Update_WhenEntityExists_UpdatesAndReturnsTrue()
-    {
-        // Arrange
-        var service = CreateService();
-        var existing = new User { Id = 1, Forename = "A", Surname = "A", Email = "a@example.com", IsActive = true };
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(new[] { existing }.AsQueryable());
-
-        var updated = new User { Id = 1, Forename = "Alice", Surname = "Anderson", Email = "alice@example.com", IsActive = false };
-
-        // Act
-        var ok = service.Update(updated);
-
-        // Assert
         ok.Should().BeTrue();
-        _dataContext.Verify(dc => dc.Update(It.Is<User>(u =>
-            u.Id == 1 &&
-            u.Forename == "Alice" &&
-            u.Surname == "Anderson" &&
-            u.Email == "alice@example.com" &&
-            u.IsActive == false
-        )), Times.Once);
+        var reloaded = await ctx.Users!.FindAsync(1L);
+        reloaded!.Forename.Should().Be("New");
+        reloaded.Surname.Should().Be("Person");
+        reloaded.Email.Should().Be("new@example.com");
+        reloaded.IsActive.Should().BeFalse();
+        reloaded.Password.Should().Be("newpass");
     }
 
     [Fact]
-    public void Update_WhenEntityMissing_ReturnsFalse()
+    public async Task UpdateAsync_WhenMissing_ReturnsFalse()
     {
-        // Arrange
-        var service = CreateService();
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(Enumerable.Empty<User>().AsQueryable());
+        using var ctx = CreateContext();
+        var sut = new UserService(ctx);
 
-        var updated = new User { Id = 42, Forename = "X", Surname = "Y", Email = "z@example.com" };
+        var ok = await sut.UpdateAsync(new User { Id = 42, Forename = "X", Surname = "Y", Email = "z@example.com", Password = "pw" });
 
-        // Act
-        var ok = service.Update(updated);
-
-        // Assert
         ok.Should().BeFalse();
-        _dataContext.Verify(dc => dc.Update(It.IsAny<User>()), Times.Never);
     }
 
     [Fact]
-    public void Delete_WhenEntityExists_RemovesAndReturnsTrue()
+    public async Task DeleteAsync_WhenExists_RemovesAndReturnsTrue()
     {
-        // Arrange
-        var service = CreateService();
-        var existing = new User { Id = 10, Forename = "Del", Surname = "User", Email = "del@example.com" };
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(new[] { existing }.AsQueryable());
+        using var ctx = CreateContext();
 
-        // Act
-        var ok = service.Delete(10);
-
-        // Assert
-        ok.Should().BeTrue();
-        _dataContext.Verify(dc => dc.Delete(existing), Times.Once);
-    }
-
-    [Fact]
-    public void Delete_WhenEntityMissing_ReturnsFalse()
-    {
-        // Arrange
-        var service = CreateService();
-        _dataContext.Setup(s => s.GetAll<User>()).Returns(Enumerable.Empty<User>().AsQueryable());
-
-        // Act
-        var ok = service.Delete(10);
-
-        // Assert
-        ok.Should().BeFalse();
-        _dataContext.Verify(dc => dc.Delete(It.IsAny<User>()), Times.Never);
-    }
-
-    private IQueryable<User> SetupUsers(string forename = "Johnny", string surname = "User", string email = "juser@example.com", bool isActive = true)
-    {
-        var users = new[]
+        var existing = new User
         {
-            new User
-            {
-                Forename = forename,
-                Surname = surname,
-                Email = email,
-                IsActive = isActive
-            }
-        }.AsQueryable();
+            Id = 10,
+            Forename = "Del",
+            Surname = "User",
+            Email = "del@example.com",
+            Password = "testpass1" 
+        };
 
-        _dataContext
-            .Setup(s => s.GetAll<User>())
-            .Returns(users);
+        ctx.Users!.Add(existing);
+        await ctx.SaveChangesAsync();
 
-        return users;
+        var sut = new UserService(ctx);
+
+        var ok = await sut.DeleteAsync(10);
+
+        ok.Should().BeTrue();
+        (await ctx.Users!.AnyAsync(u => u.Id == 10)).Should().BeFalse();
     }
 
-    private readonly Mock<IDataContext> _dataContext = new();
-    private UserService CreateService() => new(_dataContext.Object);
+    [Fact]
+    public async Task DeleteAsync_WhenMissing_ReturnsFalse()
+    {
+        using var ctx = CreateContext(); 
+        var sut = new UserService(ctx);
+
+        var ok = await sut.DeleteAsync(10);
+
+        ok.Should().BeFalse();
+    }
+
+    private static DataContext CreateContext()
+    {
+        var options = new DbContextOptionsBuilder<DataContext>()
+            .UseInMemoryDatabase(databaseName: $"Tests-{Guid.NewGuid()}")
+            .Options;
+
+        var ctx = new DataContext(options);
+        ctx.Database.EnsureCreated();
+
+        if (ctx.Users is not null && ctx.Users.Any())
+            ctx.Users.RemoveRange(ctx.Users);
+        if (ctx.UserLogs is not null && ctx.UserLogs.Any())
+            ctx.UserLogs.RemoveRange(ctx.UserLogs);
+
+        ctx.SaveChanges();
+        return ctx;
+    }
 }

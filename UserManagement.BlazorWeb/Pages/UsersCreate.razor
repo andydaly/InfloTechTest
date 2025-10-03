@@ -1,0 +1,82 @@
+﻿@page "/users/create"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using UserManagement.BlazorWeb.Dtos
+@using Microsoft.AspNetCore.Components.Forms
+
+<h1>Add User</h1>
+
+<EditForm Model="_model" OnValidSubmit="SaveAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Forename</label>
+            <InputText class="form-control" @bind-Value="_model.Forename" />
+            <ValidationMessage For="() => _model.Forename" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Surname</label>
+            <InputText class="form-control" @bind-Value="_model.Surname" />
+            <ValidationMessage For="() => _model.Surname" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="_model.Email" />
+            <ValidationMessage For="() => _model.Email" />
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Date of Birth</label>
+            <InputDate class="form-control" @bind-Value="_model.DateOfBirth" />
+        </div>
+
+        <div class="col-12">
+            <div class="form-check">
+                <InputCheckbox class="form-check-input" @bind-Value="_model.IsActive" />
+                <label class="form-check-label">Account Active</label>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Password</label>
+            <input class="form-control"
+                   type="@(_showPwd ? "text" : "password")"
+                   @bind="_model.Password" />
+            <ValidationMessage For="() => _model.Password" />
+            <div class="form-check mt-2">
+                <input id="showPwd" class="form-check-input" type="checkbox" @bind="_showPwd" />
+                <label for="showPwd" class="form-check-label">Show Password</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <button class="btn btn-primary" disabled="@_busy">Save</button>
+        <a href="/users" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    private UserDto _model = new()
+    {
+        IsActive = true,
+        DateOfBirth = new DateTime(1990, 1, 1)
+    };
+
+    private bool _showPwd;
+    private bool _busy;
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        var resp = await Http.PostAsJsonAsync("users", _model);
+        _busy = false;
+        if (resp.IsSuccessStatusCode)
+            Nav.NavigateTo("/users", true);
+    }
+}

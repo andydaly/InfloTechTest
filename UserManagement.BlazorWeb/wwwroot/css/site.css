@@ -1,0 +1,93 @@
+﻿/* ---- Page chrome (scoped to .page so we don't touch Blazor internals) ---- */
+.page {
+    background: #f7f8fb;
+}
+
+    .page h1, .page h2 {
+        font-weight: 700;
+        letter-spacing: .2px;
+        margin-bottom: 1rem;
+    }
+
+    .page h1 {
+        font-size: 2rem;
+    }
+
+    .page h2 {
+        font-size: 1.5rem;
+    }
+
+/* ---- Navbar ---- */
+.app-navbar {
+    background: linear-gradient(180deg, #ffffff, #f9fafc);
+    border-bottom: 1px solid #e7e9ef;
+}
+
+    .app-navbar .navbar-brand {
+        letter-spacing: .2px;
+    }
+
+    .app-navbar .nav-link.active {
+        font-weight: 600;
+    }
+
+/* ---- Cards & tables ---- */
+.card {
+    border-radius: 14px;
+    border-color: #e7e9ef;
+}
+
+.table {
+    background: #fff;
+}
+
+    .table th {
+        font-weight: 600;
+    }
+
+    .table td, .table th {
+        vertical-align: middle;
+    }
+
+.table-hover tbody tr:hover {
+    background-color: #f5f8ff;
+}
+
+/* ---- Footer ---- */
+.app-footer {
+    border-top: 1px solid #e7e9ef;
+    background: #fff;
+}
+
+/* High-contrast status badges */
+.badge-active,
+.badge-inactive {
+    display: inline-block;
+    padding: .4rem .65rem;
+    font-weight: 600;
+    border-radius: 9999px; /* pill */
+    line-height: 1;
+}
+
+/* Active = green */
+.badge-active {
+    background-color: #198754; /* Bootstrap success */
+    color: #fff;
+    border: none;
+    box-shadow: 0 0 0 .12rem rgba(25,135,84,.15);
+}
+
+/* Inactive = red */
+.badge-inactive {
+    background-color: #dc3545; /* Bootstrap danger */
+    color: #fff;
+    border: none;
+    box-shadow: 0 0 0 .12rem rgba(220,53,69,.15);
+}
+
+/* ---- Filter group ---- */
+.filter-group .btn.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}

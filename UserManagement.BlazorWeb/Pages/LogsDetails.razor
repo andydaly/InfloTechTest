@@ -1,0 +1,97 @@
+﻿@page "/logs/{Id:long}"
+@attribute [Authorize]
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using UserManagement.BlazorWeb.Dtos
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<h1 class="mb-3">Log Details</h1>
+
+@if (_loading)
+{
+    <p>Loading…</p>
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+    <div class="mt-3">
+        <a class="btn btn-secondary" href="/logs">Back to Logs</a>
+    </div>
+}
+else if (_log is null)
+{
+    <div class="alert alert-warning">No log found.</div>
+    <div class="mt-3">
+        <a class="btn btn-secondary" href="/logs">Back to Logs</a>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-header d-flex align-items-center">
+            <strong>Log #@_log.Id</strong>
+            <a class="btn btn-sm btn-outline-secondary ms-auto" href="/logs">Back to Logs</a>
+        </div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">When</dt>
+                <dd class="col-sm-9">@_log.OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</dd>
+
+                <dt class="col-sm-3">User</dt>
+                <dd class="col-sm-9">
+                    @_log.UserId
+                    <span class="ms-2">
+                        <a class="btn btn-sm btn-outline-primary" href="@($"/users/details/{_log.UserId}")">View User</a>
+                    </span>
+                </dd>
+
+                <dt class="col-sm-3">Action</dt>
+                <dd class="col-sm-9">@_log.Action</dd>
+
+                <dt class="col-sm-3">Performed By</dt>
+                <dd class="col-sm-9">@(_log.PerformedBy ?? "-")</dd>
+
+                <dt class="col-sm-3">Details</dt>
+                <dd class="col-sm-9">@(_log.Details ?? "-")</dd>
+            </dl>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public long Id { get; set; }
+
+    private UserLogDto? _log;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var resp = await Http.GetAsync($"logs/{Id}");
+            if (resp.IsSuccessStatusCode)
+            {
+                _log = await resp.Content.ReadFromJsonAsync<UserLogDto>();
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _error = $"Log #{Id} was not found.";
+            }
+            else
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                _error = $"Failed to load log: {(int)resp.StatusCode} {resp.ReasonPhrase}\n{body}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

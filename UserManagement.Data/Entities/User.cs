@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace UserManagement.Models;
+namespace UserManagement.Data.Entities;
 
 public class User
 {
@@ -27,4 +27,8 @@ public class User
     [DataType(DataType.Date)]
     [Display(Name = "Date of Birth")]
     public DateTime? DateOfBirth { get; set; }
+
+    [Required, StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters")]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = default!;
 }
