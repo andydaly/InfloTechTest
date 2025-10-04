@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserManagement.API", "UserM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserManagement.BlazorWeb", "UserManagement.BlazorWeb\UserManagement.BlazorWeb.csproj", "{2D60127D-C06F-48ED-917D-E2260318B659}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserManagement.API.Tests", "UserManagement.API.Tests\UserManagement.API.Tests.csproj", "{DCD018F2-9188-4477-AB3F-BABC8F78AFEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -67,6 +69,10 @@ Global
 		{2D60127D-C06F-48ED-917D-E2260318B659}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D60127D-C06F-48ED-917D-E2260318B659}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D60127D-C06F-48ED-917D-E2260318B659}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCD018F2-9188-4477-AB3F-BABC8F78AFEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCD018F2-9188-4477-AB3F-BABC8F78AFEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCD018F2-9188-4477-AB3F-BABC8F78AFEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCD018F2-9188-4477-AB3F-BABC8F78AFEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -75,6 +81,7 @@ Global
 		{F15707C9-86D2-4D30-BD1B-672487F7D3AC} = {C9849C01-AD0F-437C-B6E8-5B627335F8EE}
 		{1EDAC0F0-A080-45D5-9D56-9B2070AA7404} = {C9849C01-AD0F-437C-B6E8-5B627335F8EE}
 		{C0F78DDD-C753-432C-8E1B-F88A2DB459FD} = {C9849C01-AD0F-437C-B6E8-5B627335F8EE}
+		{DCD018F2-9188-4477-AB3F-BABC8F78AFEF} = {C9849C01-AD0F-437C-B6E8-5B627335F8EE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {46E0200E-E65A-469F-9BC8-971E5875A972}
