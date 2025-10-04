@@ -1,65 +1,216 @@
-# User Management Technical Exercise
+# User Management – Modernized
 
-The exercise is an ASP.NET Core web application backed by Entity Framework Core, which faciliates management of some fictional users.
-We recommend that you use [Visual Studio (Community Edition)](https://visualstudio.microsoft.com/downloads) or [Visual Studio Code](https://code.visualstudio.com/Download) to run and modify the application. 
+> This repository is an extended and modernised version of the original **User Management Technical Exercise**.
+> This repo contains two UIs (Blazor WebAssembly **and** MVC) over a shared data & domain-services layer.  
+> The original brief is preserved in **[OriginalREADME.md](./OriginalREADME.md)**.
 
-**The application uses an in-memory database, so changes will not be persisted between executions.**
+## What’s inside
 
-## The Exercise
-Complete as many of the tasks below as you feel comfortable with. These are split into 4 levels of difficulty 
-* **Standard** - Functionality that is common when working as a web developer
-* **Advanced** - Slightly more technical tasks and problem solving
-* **Expert** - Tasks with a higher level of problem solving and architecture needed
-* **Platform** - Tasks with a focus on infrastructure and scaleability, rather than application development.
+**Solution layout** (top-level projects):
 
-### 1. Filters Section (Standard)
+- `UserManagement.Data` — EF Core DbContext, entities, migrations and seeding. Can run with **SQLite** (default when DB exists) or **In‑Memory** (fallback).
+- `UserManagement.Services` — application/domain services (users, logs) with async APIs.
+- `UserManagement.API` — ASP.NET Core Web API (JWT auth) used by the Blazor app.
+- `UserManagement.BlazorWeb` — Blazor WebAssembly UI that talks to the API.
+- `UserManagement.Web` — MVC/Razor (server‑rendered) UI that talks directly to Services.
+- `UserManagement.Data.Tests` — unit tests for Data/Services/Web controllers.
+- `.github/workflows/ci.yml` — GitHub Actions CI that restores, builds and runs tests.
 
-The users page contains 3 buttons below the user listing - **Show All**, **Active Only** and **Non Active**. Show All has already been implemented. Implement the remaining buttons using the following logic:
-* Active Only – This should show only users where their `IsActive` property is set to `true`
-* Non Active – This should show only users where their `IsActive` property is set to `false`
+## What’s new (highlights)
 
-### 2. User Model Properties (Standard)
+- **Blazor WebAssembly UI** with JWT auth, protected routes, and a login page.
+- **Email + Password authentication** against users stored in the database.
+- **Actions & logs**: create/view/edit/delete users; application-wide logs with paging & search; “Performed By” shows the current signed-in user.
+- **Password support** in the `User` entity; masked in lists/details; show/hide on create/edit.
+- **Async services** end-to-end (`UserService`, `UserLogService`, controllers, tests).
+- **SQLite database + EF Core migrations** with automatic fallback to **InMemory** if a DB isn’t present.
+- **Bundled static assets** (CSS/JS) via WebOptimizer.
+- **Configuration-driven** API base URL (Blazor) and CORS (API).
+- **Comprehensive tests** updated for async flows.
+- **CI**: GitHub Actions workflow to restore, build, and test all projects.
 
-Add a new property to the `User` class in the system called `DateOfBirth` which is to be used and displayed in relevant sections of the app.
+---
 
-### 3. Actions Section (Standard)
+## Solution layout
 
-Create the code and UI flows for the following actions
-* **Add** – A screen that allows you to create a new user and return to the list
-* **View** - A screen that displays the information about a user
-* **Edit** – A screen that allows you to edit a selected user from the list  
-* **Delete** – A screen that allows you to delete a selected user from the list
+```
+UserManagement.sln
+├─ UserManagement.API/           # ASP.NET Core Web API (JWT, CORS) – used by Blazor
+├─ UserManagement.BlazorWeb/     # Blazor WASM client (login, protected routes) – calls the API
+├─ UserManagement.Web/           # MVC UI (does NOT call the API; uses Services directly)
+├─ UserManagement.Data/          # EF Core DbContext + entities + seeding
+├─ UserManagement.Services/      # Domain services (Users, Logs) used by API & MVC
+├─ UserManagement.Data.Tests/    # Unit tests for data/services/controllers
+└─ .github/workflows/ci.yml      # CI: build + test
+```
 
-Each of these screens should contain appropriate data validation, which is communicated to the end user.
+> **Important:** `UserManagement.Web` (MVC) does **not** depend on `UserManagement.API`.  
+> It consumes `UserManagement.Services`, which in turn uses `UserManagement.Data` (EF Core DbContext).  
+> Blazor **does** call `UserManagement.API` over HTTP using a configurable base URL.
 
-### 4. Data Logging (Advanced)
+---
 
-Extend the system to capture log information regarding primary actions performed on each user in the app.
-* In the **View** screen there should be a list of all actions that have been performed against that user. 
-* There should be a new **Logs** page, containing a list of log entries across the application.
-* In the Logs page, the user should be able to click into each entry to see more detail about it.
-* In the Logs page, think about how you can provide a good user experience - even when there are many log entries.
+## Prerequisites
 
-### 5. Extend the Application (Expert)
+- .NET 9 SDK
+- (Optional) Visual Studio 2022 / VS Code
+- (Optional) `dotnet-ef` tool for migrations:
+  ```bash
+  dotnet tool install -g dotnet-ef
+  ```
 
-Make a significant architectural change that improves the application.
-Structurally, the user management application is very simple, and there are many ways it can be made more maintainable, scalable or testable.
-Some ideas are:
-* Re-implement the UI using a client side framework connecting to an API. Use of Blazor is preferred, but if you are more familiar with other frameworks, feel free to use them.
-* Update the data access layer to support asynchronous operations.
-* Implement authentication and login based on the users being stored.
-* Implement bundling of static assets.
-* Update the data access layer to use a real database, and implement database schema migrations.
+---
 
-### 6. Future-Proof the Application (Platform)
+## Running the apps
 
-Add additional layers to the application that will ensure that it is scaleable with many users or developers. For example:
-* Add CI pipelines to run tests and build the application.
-* Add CD pipelines to deploy the application to cloud infrastructure.
-* Add IaC to support easy deployment to new environments.
-* Introduce a message bus and/or worker to handle long-running operations.
+### Configuration
 
-## Additional Notes
+**Blazor (WASM)** – `UserManagement.BlazorWeb/appsettings.json`
+```json
+{
+  "Api": {
+    "BaseUrl": "https://localhost:7144/api/"
+  }
+}
+```
 
-* Please feel free to change or refactor any code that has been supplied within the solution and think about clean maintainable code and architecture when extending the project.
-* If any additional packages, tools or setup are required to run your completed version, please document these thoroughly.
+**API** – `UserManagement.API/appsettings.json` (examples)
+```json
+{
+  "ConnectionStrings": {
+    "Users": "Data Source=%CONTENTROOTPATH%/usersinfo.db"
+  },
+  "Cors": {
+    "AllowedOrigins": [ "https://localhost:7074", "http://localhost:7074" ]
+  },
+  "Jwt": {
+    "Issuer": "UserManagement",
+    "Audience": "UserManagement.Client",
+    "Key": "replace-with-a-long-random-secret",
+    "ExpiresMinutes": 60
+  }
+}
+```
+
+> `%CONTENTROOTPATH%` becomes the app's content root at runtime.  
+> If the SQLite file **doesn’t** exist, the data layer **falls back to InMemory** so the app still runs.
+
+### Start projects
+
+- **Blazor + API:** set both **UserManagement.API** and **UserManagement.BlazorWeb** as startup projects (or run with CLI).
+- **MVC (no API needed):** set **UserManagement.Web** as startup (it uses `UserManagement.Services` directly).
+- **Blazor + API + MVC:** set **UserManagement.API**, **UserManagement.BlazorWeb** and **UserManagement.Web** as startup projects (or run with CLI).
+
+![Startup projects property page](./Screenshots/UserManagementPropertyPagesStartupProjects.png)
+
+### Seeded login (Blazor → API)
+
+- **Email:** `ploew@example.com`  
+- **Password:** `mypassword1`
+
+(Other seeded users share the same default password unless changed.)
+
+---
+
+## Database & migrations (SQLite with fallback)
+
+By default we attempt to use the SQLite connection string. If the DB file is absent, we default to the EF **InMemory** database.
+
+Create and apply migrations:
+```bash
+# Create the initial migration (if needed) (set Startup as UserManagement.API)
+dotnet ef migrations add InitialCreate -p UserManagement.Data -s UserManagement.API
+
+# Apply migrations (creates usersinfo.db next to API)
+dotnet ef database update -p UserManagement.Data -s UserManagement.API
+```
+
+To reset: delete `usersinfo.db` and run the update again.
+
+> We persist `UserLog.OccurredAt` with a value converter for SQLite so ORDER BY works correctly.
+
+---
+
+## Security & auth (Blazor + API)
+
+- **POST /api/auth/login** with `{ "email": "...", "password": "..." }` returns a JWT.
+- Token stored via an `ITokenStore` (browser storage).
+- `JwtAuthStateProvider` drives Blazor `<AuthorizeRouteView>` and the navbar.
+- API uses JWT bearer authentication & CORS based on config.
+
+---
+
+## Bundling & static files
+
+Both UIs use **WebOptimizer**:
+
+- CSS bundle: `/bundles/site.css`
+- JS bundle: `/bundles/site.js`
+
+Sources are set in each project’s `Program.cs`.
+
+---
+
+## Tests
+
+- All tests use EF **InMemory** with a unique database name per test to avoid cross‑test interference.
+- Controllers use **Moq** to verify calls and returned view models.
+
+---
+
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` runs on pushes/PRs to `main`:
+
+- Restore, build (Release), test the solution
+- Upload test results on failure (optional step included but disabled by default)
+
+---
+
+## Known tips
+
+- If Blazor login fails with *“Failed to fetch”*, verify:
+  - API is running at `https://localhost:7144/`
+  - Blazor `Api:BaseUrl` matches (`https://localhost:7144/api/` – note trailing slash)
+  - API CORS includes the Blazor origin (`https://localhost:7074`)
+- To force InMemory for a run, temporarily rename or delete `usersinfo.db`.
+
+---
+
+## Original exercise brief
+
+See **[OriginalREADME.md](./OriginalREADME.md)** for the original task list and context.
+
+---
+
+## Screenshots
+
+### Blazor Web
+
+| Page | Image |
+|---|---|
+| Home | ![Blazor Home](./Screenshots/UserManagementBlazorWebHome.png) |
+| Login | ![Blazor Login](./Screenshots/UserManagementBlazorWebLogin.png) |
+| Users | ![Blazor Users](./Screenshots/UserManagementBlazorWebUsers.png) |
+| Create User | ![Blazor Create](./Screenshots/UserManagementBlazorWebCreate.png) |
+| Edit User | ![Blazor Edit](./Screenshots/UserManagementBlazorWebEdit.png) |
+| Details | ![Blazor Details](./Screenshots/UserManagementBlazorWebDetails.png) |
+| Logs | ![Blazor Logs](./Screenshots/UserManagementBlazorWebLogs.png) |
+| Log Details | ![Blazor Log Details](./Screenshots/UserManagementBlazorWebLogDetails.png) |
+
+### MVC Web
+
+| Page | Image |
+|---|---|
+| Home | ![Web Home](./Screenshots/UserManagementWebHome.png) |
+| Users | ![Web Users](./Screenshots/UserManagementWebUsers.png) |
+| Details | ![Web Details](./Screenshots/UserManagementWebDetails.png) |
+| Edit | ![Web Edit](./Screenshots/UserManagementWebEdit.png) |
+| Delete | ![Web Delete](./Screenshots/UserManagementWebDelete.png) |
+| Logs | ![Web Logs](./Screenshots/UserManagementWebLogs.png) |
+| Log Entry | ![Web Log Entry](./Screenshots/UserManagementWebLogEntry.png) |
+
+### API
+
+- Swagger / Overview  
+  ![API Overview](./Screenshots/UserManagementAPI.png)

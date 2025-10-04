@@ -106,10 +106,10 @@ public class UsersController : Controller
             ModelState.AddModelError("", "Mismatched user id.");
         }
 
+        ModelState.Remove(nameof(UserManagement.Data.Entities.User.Password));
+
         if (!ModelState.IsValid)
-        {
             return View(model);
-        }
 
         var ok = await _userService.UpdateAsync(model);
         if (!ok) return NotFound();

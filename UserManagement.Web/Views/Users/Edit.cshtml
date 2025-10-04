@@ -28,6 +28,17 @@
         <input asp-for="DateOfBirth" class="form-control" type="date" />
         <span asp-validation-for="DateOfBirth" class="text-danger"></span>
     </div>
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label">New Password (leave blank to keep)</label>
+        <input asp-for="Password" class="form-control" type="password" id="PasswordEdit" />
+        <span class="form-text text-muted">Leave empty to keep the current password.</span>
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <div class="form-check mb-3">
+        <input type="checkbox" class="form-check-input" id="ShowPasswordEdit"
+               onchange="togglePwd('PasswordEdit','ShowPasswordEdit')">
+        <label for="ShowPasswordEdit" class="form-check-label">Show password</label>
+    </div>
     <div class="form-check mb-3">
         <input asp-for="IsActive" class="form-check-input" />
         <label asp-for="IsActive" class="form-check-label"></label>
@@ -39,4 +50,11 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePwd(inputId, chkId) {
+            const i = document.getElementById(inputId);
+            const c = document.getElementById(chkId);
+            if (i && c) i.type = c.checked ? 'text' : 'password';
+        }
+    </script>
 }
